@@ -1,7 +1,7 @@
 # game-mode
 Set Digital Vibrance and Mouse Acceleration
 
-
+IMPORTANT: Remember that the main thing people may want to change in this code is the Mouse_Name term. It is possible to find one's mouse name with @$ xinput --list .
 
 If you run this script without arguments, it will toggle between the Game Mode Default and Default functions, 
 which are: switching Nvidia Digital Vibrance to 405 and Mouse Acceleration to -1, and both to 0.
