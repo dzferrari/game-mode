@@ -1,0 +1,177 @@
+#!/bin/bash
+###Game Config
+##Basic Function: Toggle Nvidia Vibrance to 405 and Mouse Accel to -1
+
+
+##Help
+Help()
+{
+	#Display Help Message
+	echo
+	echo "Help Message"
+	echo
+	echo "If you run this script without arguments, it will toggle between the Game Mode Default and Default functions, "
+	echo "which are: switching Nvidia Digital Vibrance to 405 and Mouse Acceleration to -1, and both to 0"
+	echo "**UPDATE**: In order to keep my accel always constant at -1, I decided to not let it normally switch back to 0, only if requested." 
+	echo
+	echo "Syntax: game-mode [OPTION] (VALUE)"
+	echo
+	echo "OPTIONS:"
+	echo "-a			Acceleration. Set Mouse Acceleration manually. Insert value after this flag."
+	echo "-c  | --check		Check current Digital Vibrance and Mouse Accel."
+	echo "-d  | --default		Default. Reset configs to default. Vibrance and Mouse Accel will be set to 0."
+	echo "-g			Game Mode Default. Digital Vibrance set to 405 and Mouse Accel set to -1."
+	echo "-h  | --help		Help. See the Help Message."
+	echo "-nd | --new-default	New Default. Set configs to new default, being Vibrance 405 and Accel -1."
+	echo "-v			Vibrance. Set the Digital Vibrance manually. Insert Value after this flag."
+	echo 
+	echo
+	echo "--dpi			DPI. Set Mouse DPI manually. Insert value. ATTENTION: changing this DPI value "
+	echo "			will affect the preset resolutions of your mouse."
+	echo
+}
+
+Check()
+{
+	#Check current Mouse Accel and Digital Vibrance Values
+	echo "Digital Vibrance:        $(nvidia-settings -q "DigitalVibrance" | grep -m1 "Attribute.*$Vibrance\." | cut -d' ' -f 6 | cut -d'.' -f 1)"
+	echo "Mouse Acceleration: $(xinput --list-props $ID | grep "libinput.*($Prop).*$Accel_game" | cut -d':' -f 2)"
+}
+
+#Nvidia Vibrance
+Digital_Vibrance_Toggle()
+{
+
+	if [[ $(nvidia-settings -q "DigitalVibrance" | grep "Attribute.*$Vibrance\.") ]]
+	then
+	    nvidia-settings -a "DigitalVibrance=0" > /dev/null
+	    echo "Vibrance Set to 0"
+	else 
+	    nvidia-settings -a "DigitalVibrance=$Vibrance" > /dev/null
+	    echo "Vibrance Set to $Vibrance"
+	fi
+}
+
+Digital_Vibrance()
+{
+
+	if [[ $(nvidia-settings -q "DigitalVibrance" | grep "Attribute.*$Vibrance\.") ]]
+	then
+	    echo "Vibrance already set to $Vibrance"
+	else 
+	    nvidia-settings -a "DigitalVibrance=$Vibrance" > /dev/null
+	    echo "Vibrance Set to $Vibrance"
+	fi
+}
+
+#Mouse Accel
+Accel_default=0
+Mouse_name="Logitech.*G403"    #if you need to change the mouse, this is what you want to change in the code!!!
+Line=$(xinput --list | grep -E $Mouse_name | grep -v -i -E "Consumer|Keyboard|Control")
+ID=$(echo $Line | cut -d' ' -f 8 | cut -d'=' -f 2)
+Prop_0=$(xinput -list-props $ID | grep "libinput Accel Speed*" | grep -v -i "Default" | cut -d' ' -f 4)
+Prop=$(echo ${Prop_0:1:3})
+
+Mouse_Accel_Toggle()
+{
+	if [[ $(xinput --list-props $ID | grep "libinput.*($Prop).*$Accel_game") ]]
+	then
+	    xinput --set-prop $ID $Prop $Accel_default > /dev/null
+	    ratbagctl Logitech resolution active set 1
+	    echo "Mouse Accel Set to 0"
+	else 
+	    xinput --set-prop $ID $Prop $Accel_game > /dev/null
+	    ratbagctl Logitech resolution active set 2
+	    echo "Mouse Accel Set to $Accel_game"
+	fi
+}
+
+Mouse_Accel()
+{
+	if [[ $(xinput --list-props $ID | grep "libinput.*($Prop).*$Accel_game") ]]
+	then
+	    echo "Mouse Accel already set to $Accel_game"
+	else 
+	    xinput --set-prop $ID $Prop $Accel_game > /dev/null
+	    ratbagctl Logitech resolution active set 2
+	    echo "Mouse Accel Set to $Accel_game"
+	fi
+}
+
+
+#Arguments
+while [ ! $# -eq 0 ]
+do
+	case "$1" in
+		--help | -h )
+			Help
+			exit
+			;;
+		--check | -c )
+			Check
+			exit
+			;;
+		-v )
+			if [ $2 ]
+			then
+				Vibrance=$2
+				Digital_Vibrance
+			else
+				echo "missing value for 'v'"
+			fi
+			exit 1
+			;;	
+		--default | -d )
+			Vibrance=0
+			Digital_Vibrance_Toggle
+			Accel_game=0
+			Mouse_Accel_Toggle
+			exit 1
+			;;
+		--new-default | -nd )
+			Vibrance=0
+			Digital_Vibrance_Toggle
+			Accel_game=-1
+			Mouse_Accel
+			exit 1
+			;;
+		-g )
+			Vibrance=405
+			Digital_Vibrance
+			Accel_game=-1
+			Mouse_Accel
+			exit 1
+			;;	
+		-a )
+			if [ $2 ]
+			then
+				Accel_game=$2
+				Mouse_Accel
+			else
+				echo "missing value for 'a'"
+			fi
+			exit 1
+			;;
+		--dpi )
+			ratbagctl Logitech dpi set $2
+			echo "DPI set to $2"
+			exit 1
+			;;
+			
+	esac
+done
+
+
+## If no arguments. (Important note: If I want to toggle the Mouse Accel as well as the Digital Vibrance, I just have to call the function 'Mouse_Accel_Toggle' in the end (line 172), instead of 'Mouse_Accel')
+	
+if [ "$Vibrance" = "" ] && [ "$Accel_game" = "" ]
+then
+	Vibrance=405
+	Digital_Vibrance_Toggle
+	Accel_game=-1.000000
+	Mouse_Accel
+fi
+
+
+	
+
